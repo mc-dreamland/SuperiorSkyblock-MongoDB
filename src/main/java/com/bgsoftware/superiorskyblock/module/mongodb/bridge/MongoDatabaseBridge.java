@@ -8,23 +8,15 @@ import com.bgsoftware.superiorskyblock.module.mongodb.MongoDBClient;
 import com.bgsoftware.superiorskyblock.module.mongodb.threading.DatabaseExecutor;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.DeleteManyModel;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.InsertOneModel;
-import com.mongodb.client.model.ReplaceOneModel;
-import com.mongodb.client.model.ReplaceOptions;
-import com.mongodb.client.model.UpdateManyModel;
-import com.mongodb.client.model.WriteModel;
+import com.mongodb.client.model.*;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
+
+import static com.mongodb.client.model.Filters.eq;
 
 public final class MongoDatabaseBridge implements DatabaseBridge {
 
@@ -61,15 +53,39 @@ public final class MongoDatabaseBridge implements DatabaseBridge {
             return;
 
         DatabaseExecutor.execute(() -> {
-            MongoCollection<Document> collection = MongoDBClient.getCollection(collectionName);
-            Bson query = buildFilter(filter);
-            Document updateOperation = new Document("$set", buildColumns(columns));
-
-            if (this.batchOperations != null) {
-                this.batchOperations.computeIfAbsent(collection, c -> new ArrayList<>())
-                        .add(new UpdateManyModel<>(query, updateOperation));
-            } else {
-                collection.updateMany(query, updateOperation);
+            switch (collectionName) {
+                case "islands_members" -> {
+                    MongoDatabaseIslandSaver.saveMemberRole(filter, columns);
+                }
+                case "islands_settings" -> {
+                    MongoDatabaseIslandSaver.updateSettings(filter, columns);
+                }
+                case "islands" -> {
+                    MongoDatabaseIslandSaver.updateIslandInfo(filter, columns);
+                }
+                case "islands_warps" -> {
+                    if (columns[0].getKey().equals("name")) {
+                        MongoDatabaseIslandSaver.updateWarpName(filter, columns);
+                    } else {
+                        MongoDatabaseIslandSaver.updateWarp(filter, columns);
+                    }
+                }
+                case "islands_banks" -> {
+                    MongoDatabaseIslandSaver.updateBank(filter, columns);
+                }
+                case "islands_warp_categories" -> {
+                    if (columns[0].getKey().equals("name")) {
+                        MongoDatabaseIslandSaver.updateWarpCategoryName(filter, columns);
+                    } else {
+                        MongoDatabaseIslandSaver.updateWarpCategory(filter, columns);
+                    }
+                }
+                case "players" -> {
+                    MongoDatabasePlayerSaver.updatePlayer(filter, columns);
+                }
+                case "players_settings" -> {
+                    MongoDatabasePlayerSaver.updatePlayerSetting(filter, columns);
+                }
             }
         });
     }
@@ -81,21 +97,94 @@ public final class MongoDatabaseBridge implements DatabaseBridge {
             return;
 
         DatabaseExecutor.execute(() -> {
-            MongoCollection<Document> collection = MongoDBClient.getCollection(collectionName);
-            List<String> filteredFields = MongoDBClient.getCachedIndex(collectionName);
-            if (filteredFields == null) {
-                _insertObject(collection, buildColumns(columns));
-            } else {
-                List<Bson> filters = new LinkedList<>();
-
-                for (Pair<String, Object> column : columns) {
-                    if (filteredFields.contains(column.getKey())) {
-                        filters.add(Filters.eq(column.getKey(), column.getValue()));
-                    }
+            switch (collectionName) {
+                case "islands_members" -> {
+                    MongoDatabaseIslandSaver.addMembers(columns);
                 }
-
-                _replaceObject(collection, buildFiltersFromList(filters), buildColumns(columns));
+                case "islands_bans" -> {
+                    MongoDatabaseIslandSaver.addBannedPlayer(columns);
+                }
+                case "islands_homes" -> {
+                    MongoDatabaseIslandSaver.addIslandHome(columns);
+                }
+                case "islands_visitor_homes" -> {
+                    MongoDatabaseIslandSaver.saveVisitorLocation(columns);
+                }
+                case "islands_player_permissions" -> {
+                    MongoDatabaseIslandSaver.savePlayerPermission(columns);
+                }
+                case "islands_role_permissions" -> {
+                    MongoDatabaseIslandSaver.saveRolePermission(columns);
+                }
+                case "islands_upgrades" -> {
+                    MongoDatabaseIslandSaver.saveUpgrade(columns);
+                }
+                case "islands_block_limits" -> {
+                    MongoDatabaseIslandSaver.saveBlockLimit(columns);
+                }
+                case "islands_entity_limits" -> {
+                    MongoDatabaseIslandSaver.saveEntityLimit(columns);
+                }
+                case "islands_effects" -> {
+                    MongoDatabaseIslandSaver.saveIslandEffect(columns);
+                }
+                case "islands_role_limits" -> {
+                    MongoDatabaseIslandSaver.saveRoleLimit(columns);
+                }
+                case "islands_warps" -> {
+                    MongoDatabaseIslandSaver.saveWarp(columns);
+                }
+                case "islands_ratings" -> {
+                    MongoDatabaseIslandSaver.saveRating(columns);
+                }
+                case "islands_missions" -> {
+                    MongoDatabaseIslandSaver.saveMission(columns);
+                }
+                case "islands_flags" -> {
+                    MongoDatabaseIslandSaver.saveIslandFlag(columns);
+                }
+                case "islands_generators" -> {
+                    MongoDatabaseIslandSaver.saveGeneratorRate(columns);
+                }
+                case "islands_chests" -> {
+                    MongoDatabaseIslandSaver.saveIslandChest(columns);
+                }
+                case "islands_visitors" -> {
+                    MongoDatabaseIslandSaver.saveVisitor(columns);
+                }
+                case "islands_warp_categories" -> {
+                    MongoDatabaseIslandSaver.saveWarpCategory(columns);
+                }
+                case "bank_transactions" -> {
+                    MongoDatabaseIslandSaver.saveBankTransaction(columns);
+                }
+                case "savePersistentDataContainer" -> {
+                    MongoDatabaseIslandSaver.savePersistentDataContainer(columns);
+                }
+                case "islands" -> {
+                    MongoDatabaseIslandSaver.insertIsland(columns);
+                }
+                case "islands_banks" -> {
+                    MongoDatabaseIslandSaver.insertIslandBank(columns);
+                }
+                case "islands_settings" -> {
+                    MongoDatabaseIslandSaver.insertIslandSettings(columns);
+                }
+                case "players_missions" -> {
+                    MongoDatabasePlayerSaver.saveMission(columns);
+                }
+                case "players_custom_data" -> {
+                    MongoDatabasePlayerSaver.savePersistentDataContainer(columns);
+                }
+                case "players" -> {
+                    MongoDatabasePlayerSaver.insertPlayer(columns);
+                }
+                case "players_settings" -> {
+                    MongoDatabasePlayerSaver.insertPlayerSetting(columns);
+                }
             }
+
+
         });
     }
 
@@ -105,15 +194,85 @@ public final class MongoDatabaseBridge implements DatabaseBridge {
             return;
 
         DatabaseExecutor.execute(() -> {
-            MongoCollection<Document> collection = MongoDBClient.getCollection(collectionName);
-            Bson query = buildFilter(filter);
-
-            if (this.batchOperations != null) {
-                this.batchOperations.computeIfAbsent(collection, c -> new ArrayList<>())
-                        .add(new DeleteManyModel<>(query));
-            } else {
-                collection.deleteMany(query);
+            switch (collectionName) {
+                case "islands_members" -> {
+                    MongoDatabaseIslandSaver.removeMembers(filter);
+                }
+                case "islands_bans" -> {
+                    MongoDatabaseIslandSaver.removeBannedPlayer(filter);
+                }
+                case "islands_homes" -> {
+                    MongoDatabaseIslandSaver.deleteIslandHome(filter);
+                }
+                case "islands_visitor_homes" -> {
+                    MongoDatabaseIslandSaver.removeVisitorLocation(filter);
+                }
+                case "islands_player_permissions" -> {
+                    MongoDatabaseIslandSaver.clearPlayerPermission(filter);
+                }
+                case "islands_role_permissions" -> {
+                    MongoDatabaseIslandSaver.clearRolePermissions(filter);
+                }
+                case "islands_block_limits" -> {
+                    if (filter.getFilters().size() == 1) {
+                        MongoDatabaseIslandSaver.clearBlockLimits(filter);
+                    } else {
+                        MongoDatabaseIslandSaver.removeBlockLimit(filter);
+                    }
+                }
+                case "islands_entity_limits" -> {
+                    MongoDatabaseIslandSaver.clearEntityLimits(filter);
+                }
+                case "islands_effects" -> {
+                    if (filter.getFilters().size() == 1) {
+                        MongoDatabaseIslandSaver.clearIslandEffects(filter);
+                    } else {
+                        MongoDatabaseIslandSaver.removeIslandEffect(filter);
+                    }
+                }
+                case "islands_role_limits" -> {
+                    MongoDatabaseIslandSaver.removeRoleLimit(filter);
+                }
+                case "islands_warps" -> {
+                    MongoDatabaseIslandSaver.removeWarp(filter);
+                }
+                case "islands_ratings" -> {
+                    if (filter.getFilters().size() == 1) {
+                        MongoDatabaseIslandSaver.clearRatings(filter);
+                    } else {
+                        MongoDatabaseIslandSaver.removeRating(filter);
+                    }
+                }
+                case "islands_missions" -> {
+                    MongoDatabaseIslandSaver.removeMission(filter);
+                }
+                case "islands_flags" -> {
+                    MongoDatabaseIslandSaver.removeIslandFlag(filter);
+                }
+                case "islands_generators" -> {
+                    if (filter.getFilters().size() == 2) {
+                        MongoDatabaseIslandSaver.clearGeneratorRates(filter);
+                    } else {
+                        MongoDatabaseIslandSaver.removeGeneratorRate(filter);
+                    }
+                }
+                case "islands_warp_categories" -> {
+                    MongoDatabaseIslandSaver.removeWarpCategory(filter);
+                }
+                case "islands_custom_data" -> {
+                    MongoDatabaseIslandSaver.removePersistentDataContainer(filter);
+                }
+                case "islands" -> {
+                    MongoDatabaseIslandSaver.deleteIsland(filter);
+                }
+                case "players_missions" -> {
+                    MongoDatabasePlayerSaver.removeMission(filter);
+                }
+                case "players_custom_data" -> {
+                    MongoDatabasePlayerSaver.removePersistentDataContainer(filter);
+                }
             }
+
         });
     }
 
@@ -137,23 +296,6 @@ public final class MongoDatabaseBridge implements DatabaseBridge {
         return this.databaseBridgeMode;
     }
 
-    private void _replaceObject(MongoCollection<Document> collection, Bson filter, Document columns) {
-        if (this.batchOperations != null) {
-            this.batchOperations.computeIfAbsent(collection, c -> new ArrayList<>())
-                    .add(new ReplaceOneModel<>(filter, columns, new ReplaceOptions().upsert(true)));
-        } else {
-            collection.replaceOne(filter, columns, new ReplaceOptions().upsert(true));
-        }
-    }
-
-    private void _insertObject(MongoCollection<Document> collection, Document columns) {
-        if (this.batchOperations != null) {
-            this.batchOperations.computeIfAbsent(collection, c -> new ArrayList<>())
-                    .add(new InsertOneModel<>(columns));
-        } else {
-            collection.insertOne(columns);
-        }
-    }
 
     private static Bson buildFilter(@Nullable DatabaseFilter filter) {
         if (filter == null || filter.getFilters().isEmpty())
@@ -162,25 +304,13 @@ public final class MongoDatabaseBridge implements DatabaseBridge {
         List<Bson> filters = new LinkedList<>();
 
         filter.getFilters().forEach(columnFilter ->
-                filters.add(Filters.eq(columnFilter.getKey(), columnFilter.getValue())));
+                filters.add(eq(columnFilter.getKey(), columnFilter.getValue())));
 
         return buildFiltersFromList(filters);
     }
 
     private static Bson buildFiltersFromList(List<Bson> filters) {
         return filters.isEmpty() ? Filters.empty() : filters.size() == 1 ? filters.get(0) : Filters.and(filters);
-    }
-
-    private static Document buildColumns(Pair<String, Object>[] columns) {
-        Document document = new Document();
-
-        if (columns != null) {
-            for (Pair<String, Object> column : columns) {
-                document.put(column.getKey(), column.getValue());
-            }
-        }
-
-        return document;
     }
 
 }

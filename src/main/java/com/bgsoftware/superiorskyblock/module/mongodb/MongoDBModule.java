@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.IOException;
 
 public final class MongoDBModule extends PluginModule {
+    private SuperiorSkyblock plugin;
 
     public MongoDBModule() {
         super("SSB-MongoDB", "Ome_R");
@@ -21,6 +22,7 @@ public final class MongoDBModule extends PluginModule {
 
     @Override
     public void onEnable(SuperiorSkyblock plugin) {
+        this.plugin = plugin;
         YamlConfiguration config;
 
         try {
@@ -43,6 +45,7 @@ public final class MongoDBModule extends PluginModule {
         MongoDBInitializer.initDatabase(plugin);
 
         plugin.getFactory().registerDatabaseBridgeFactory(new MongoDatabaseBridgeFactory());
+
     }
 
     @Override
@@ -58,7 +61,9 @@ public final class MongoDBModule extends PluginModule {
 
     @Override
     public Listener[] getModuleListeners(SuperiorSkyblock superiorSkyblock) {
-        return new Listener[0];
+        return new Listener[]{
+                new SelfListener(plugin)
+        };
     }
 
     @Override

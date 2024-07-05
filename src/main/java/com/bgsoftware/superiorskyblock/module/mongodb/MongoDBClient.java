@@ -30,6 +30,7 @@ public final class MongoDBClient {
         mongoClient = MongoClients.create(new ConnectionString(url));
         mongoClient.startSession(); // Makes sure connection is valid.
         database = mongoClient.getDatabase(databaseName);
+        System.out.println("Connected to database: " + database.getName());
     }
 
     public static void close() {
