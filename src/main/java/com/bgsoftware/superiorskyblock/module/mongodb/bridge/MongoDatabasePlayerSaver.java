@@ -296,7 +296,7 @@ public class MongoDatabasePlayerSaver {
                 update.append(key, value);
             }
         }
-        collection.insertOne(new Document(update));
+        collection.insertOne(update);
     }
 
     public static void insertPlayerSetting(Pair<String, Object>... columns) {

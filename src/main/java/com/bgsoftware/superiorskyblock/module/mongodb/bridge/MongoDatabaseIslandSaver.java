@@ -1034,7 +1034,7 @@ public class MongoDatabaseIslandSaver {
                 update.append(key, value);
             }
         }
-        collection.insertOne(new Document(update));
+        collection.insertOne(update);
     }
 
     public static void insertIslandBank(Pair<String, Object>... columns) {
