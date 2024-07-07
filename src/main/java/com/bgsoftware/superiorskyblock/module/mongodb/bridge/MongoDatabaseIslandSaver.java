@@ -1,13 +1,23 @@
 package com.bgsoftware.superiorskyblock.module.mongodb.bridge;
 
 import com.bgsoftware.superiorskyblock.api.data.DatabaseFilter;
+import com.bgsoftware.superiorskyblock.api.key.Key;
 import com.bgsoftware.superiorskyblock.api.objects.Pair;
+import com.bgsoftware.superiorskyblock.core.Text;
+import com.bgsoftware.superiorskyblock.core.key.Keys;
 import com.bgsoftware.superiorskyblock.module.mongodb.MongoDBClient;
+import com.google.gson.*;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.model.Filters;
 import org.bson.Document;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Map;
 
 public class MongoDatabaseIslandSaver {
+    private static final Gson GSON = new GsonBuilder().create();
     static void addMembers(Pair<String, Object>... columns) {
         MongoCollection<Document> collection = MongoDBClient.getCollection("islands_info");
         Document info = new Document();
@@ -195,8 +205,10 @@ public class MongoDatabaseIslandSaver {
                 environment = value.toString();
             }
         }
-        del.append("visitors." + environment, "");
-        collection.updateOne(query, new Document("$unset", del));
+        if (!environment.isEmpty()) {
+            del.append("visitors." + environment, "");
+            collection.updateOne(query, new Document("$unset", del));
+        }
     }
 
     public static void changeOwner(DatabaseFilter filter, Pair<String, Object>... columns) {
@@ -229,9 +241,65 @@ public class MongoDatabaseIslandSaver {
         for (Pair<String, Object> column : columns) {
             String key = column.getKey();
             Object value = column.getValue();
+            if ("dirty_chunks".equals(key)) {
+                update.append(key, initDirtyChunks((String) value));
+                continue;
+            }
+            if ("block_counts".equals(key)) {
+                update.append(key, initBlockCounts((String) value));
+                continue;
+            }
+            if ("entity_counts".equals(key)) {
+                update.append(key, initEntityCounts((String) value));
+                continue;
+            }
             update.append(key, value);
         }
         collection.updateOne(query, new Document("$set", update));
+    }
+
+    public static Document initDirtyChunks(String dirtyChunks) {
+        if (Text.isBlank(dirtyChunks))
+            return null;
+
+        Document document = new Document();
+        JsonObject dirtyChunksObject = GSON.fromJson(dirtyChunks, JsonObject.class);
+        for (Map.Entry<String, JsonElement> dirtyChunkEntry : dirtyChunksObject.entrySet()) {
+            String worldName = dirtyChunkEntry.getKey();
+            JsonArray dirtyChunksArray = dirtyChunkEntry.getValue().getAsJsonArray();
+            ArrayList<String> chunks = new ArrayList<>();
+            dirtyChunksArray.forEach(dirtyChunkElement -> chunks.add(dirtyChunkElement.getAsString()));
+            document.append(worldName.split("_")[2], chunks);
+        }
+        return document;
+    }
+    public static Document initBlockCounts(String blockCounts) {
+        if (Text.isBlank(blockCounts))
+            return null;
+
+        Document document = new Document();
+        JsonArray blockCountsJsonArray = GSON.fromJson(blockCounts, JsonArray.class);
+        blockCountsJsonArray.forEach(blockCountElement -> {
+            JsonObject blockCountObject = blockCountElement.getAsJsonObject();
+            String block = blockCountObject.get("id").getAsString();
+            long amount = blockCountObject.get("amount").getAsLong();
+            document.append(block, amount);
+        });
+        return document;
+    }
+    public static Document initEntityCounts(String blockCounts) {
+        if (Text.isBlank(blockCounts))
+            return null;
+
+        Document document = new Document();
+        JsonArray blockCountsJsonArray = GSON.fromJson(blockCounts, JsonArray.class);
+        blockCountsJsonArray.forEach(blockCountElement -> {
+            JsonObject blockCountObject = blockCountElement.getAsJsonObject();
+            String block = blockCountObject.get("id").getAsString();
+            long amount = blockCountObject.get("amount").getAsLong();
+            document.append(block, amount);
+        });
+        return document;
     }
 
     public static void savePlayerPermission(Pair<String, Object>... columns) {
@@ -274,8 +342,10 @@ public class MongoDatabaseIslandSaver {
                 player = value.toString();
             }
         }
-        del.append("player_permissions." + player, "");
-        collection.updateOne(query, new Document("$unset", del));
+        if (!player.isEmpty()) {
+            del.append("player_permissions." + player, "");
+            collection.updateOne(query, new Document("$unset", del));
+        }
     }
 
     public static void saveRolePermission(Pair<String, Object>... columns) {
@@ -339,7 +409,7 @@ public class MongoDatabaseIslandSaver {
         Document query = new Document();
         Document update = new Document();
         String block = "";
-        String limit = "";
+        Object limit = null;
         for (Pair<String, Object> column : columns) {
             String key = column.getKey();
             Object value = column.getValue();
@@ -348,7 +418,7 @@ public class MongoDatabaseIslandSaver {
             } else if ("block".equals(key)) {
                 block = (String) value;
             } else if ("limit".equals(key)) {
-                limit = (String) value;
+                limit = value;
             }
         }
         update.append("block_limits." + block, limit);
@@ -391,7 +461,7 @@ public class MongoDatabaseIslandSaver {
         Document query = new Document();
         Document update = new Document();
         String entity = "";
-        String limit = "";
+        Object limit = null;
         for (Pair<String, Object> column : columns) {
             String key = column.getKey();
             Object value = column.getValue();
@@ -400,7 +470,7 @@ public class MongoDatabaseIslandSaver {
             } else if ("entity".equals(key)) {
                 entity = (String) value;
             } else if ("limit".equals(key)) {
-                limit = (String) value;
+                limit = value;
             }
         }
         update.append("entity_limits." + entity, limit);
@@ -480,7 +550,7 @@ public class MongoDatabaseIslandSaver {
         Document query = new Document();
         Document update = new Document();
         String k = "";
-        String v = "";
+        Object v = null;
         for (Pair<String, Object> column : columns) {
             String key = column.getKey();
             Object value = column.getValue();
@@ -489,7 +559,7 @@ public class MongoDatabaseIslandSaver {
             } else if ("role".equals(key)) {
                 k = (String) value;
             } else if ("limit".equals(key)) {
-                v = (String) value;
+                v = value;
             }
         }
         update.append("role_limits." + k, v);
@@ -585,11 +655,12 @@ public class MongoDatabaseIslandSaver {
             if ("island".equals(key)) {
                 query.append("_id", value);
             } else {
-                name = "warps." + value;
+                name =  (String) value;
             }
         }
-
-        collection.updateOne(query, new Document("$unset", update.append(name, "")));
+        if (!name.isEmpty()) {
+            collection.updateOne(query, new Document("$unset", update.append("warps." + name, "")));
+        }
     }
 
     public static void saveRating(Pair<String, Object>... columns) {
@@ -672,11 +743,12 @@ public class MongoDatabaseIslandSaver {
             if ("island".equals(key)) {
                 query.append("_id", value);
             } else {
-                name = "missions." + value;
+                name = (String) value;
             }
         }
-
-        collection.updateOne(query, new Document("$unset", new Document(name, "")));
+        if (!name.isEmpty()) {
+            collection.updateOne(query, new Document("$unset", new Document("missions." + name, "")));
+        }
     }
 
     public static void saveIslandFlag(Pair<String, Object>... columns) {
@@ -709,11 +781,12 @@ public class MongoDatabaseIslandSaver {
             if ("island".equals(key)) {
                 query.append("_id", value);
             } else {
-                name = "flags." + value;
+                name = (String) value;
             }
         }
-
-        collection.updateOne(query, new Document("$unset", new Document(name, "")));
+        if (!name.isEmpty()) {
+            collection.updateOne(query, new Document("$unset", new Document("flags." + name, "")));
+        }
     }
 
     public static void saveGeneratorRate(Pair<String, Object>... columns) {
@@ -755,7 +828,9 @@ public class MongoDatabaseIslandSaver {
                 block = key;
             }
         }
-        collection.updateOne(query, new Document("$unset", new Document("generators." + environment + "." + block, "")));
+        if (!environment.isEmpty() && !block.isEmpty()) {
+            collection.updateOne(query, new Document("$unset", new Document("generators." + environment + "." + block, "")));
+        }
     }
 
     public static void clearGeneratorRates(DatabaseFilter filter) {
@@ -1031,6 +1106,14 @@ public class MongoDatabaseIslandSaver {
             if ("uuid".equals(key)) {
                 update.append("_id", value);
             } else {
+                if ("dirty_chunks".equals(key)) {
+                    update.append(key, initDirtyChunks((String) value));
+                    continue;
+                }
+                if ("block_counts".equals(key)) {
+                    update.append(key, initBlockCounts((String) value));
+                    continue;
+                }
                 update.append(key, value);
             }
         }
@@ -1063,7 +1146,7 @@ public class MongoDatabaseIslandSaver {
             if ("island".equals(key)) {
                 query.append("_id", value);
             } else {
-                update.append("settings" + key, value);
+                update.append("settings." + key, value);
             }
         }
         collection.updateOne(query, new Document("$set", update));
@@ -1074,9 +1157,30 @@ public class MongoDatabaseIslandSaver {
         for (Pair<String, Object> column : filter.getFilters()) {
             String key = column.getKey();
             Object value = column.getValue();
-            if ("island".equals(key)) {
-                collection.deleteOne(Filters.eq("_id", value));
+            if ("uuid".equals(key)) {
+                collection.deleteOne(new Document("_id", value));
+                return;
             }
+        }
+    }
+
+    public static void updateStackedBlock(Block block, int amount) {
+        MongoCollection<Document> collection = MongoDBClient.getCollection("islands_info");
+        World world = block.getLocation().getWorld();
+        String[] s = world.getName().split("_");
+        String islandUUID = s[1];
+        Key key = Keys.of(block);
+        String loc = s[2] + "," + block.getLocation().getBlockX() + "," + block.getLocation().getBlockY() + "," + block.getLocation().getBlockZ();
+        if (amount > 0) {
+            collection.updateOne(
+                    new Document("_id", islandUUID),
+                    new Document("$set", new Document("stack_blocks." + loc, key.getGlobalKey() + "," + amount))
+            );
+        } else {
+            collection.updateOne(
+                new Document("_id", islandUUID),
+                new Document("$unset", new Document("stack_blocks." + loc, ""))
+            );
         }
     }
 

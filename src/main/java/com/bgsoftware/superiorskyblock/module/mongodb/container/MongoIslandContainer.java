@@ -114,11 +114,8 @@ public class MongoIslandContainer implements IslandsContainer {
             return island;
         }
 
-        MongoDatabaseBridge mongoDatabaseBridge = new MongoDatabaseBridge();
-        MongoIslandDataLoader.loadIsland(this, uuid, mongoDatabaseBridge);
 
-
-        return island;
+        return this.islandsByUUID.get(uuid);
     }
 
     @Nullable

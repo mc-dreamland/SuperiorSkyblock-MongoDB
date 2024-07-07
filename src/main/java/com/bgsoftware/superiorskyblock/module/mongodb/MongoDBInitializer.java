@@ -26,8 +26,8 @@ public final class MongoDBInitializer {
     }
 
     private static void createIndexes() {
-        MongoDBClient.createIndex("islands_info", "uuid");
-        MongoDBClient.createIndex("players_info", "uuid");
+        MongoDBClient.createIndex("islands_info", "_id");
+        MongoDBClient.createIndex("players_info", "_id");
     }
 
 

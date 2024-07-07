@@ -4,6 +4,7 @@ import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.data.DatabaseBridge;
 import com.bgsoftware.superiorskyblock.api.data.DatabaseFilter;
 import com.bgsoftware.superiorskyblock.api.enums.Rating;
+import com.bgsoftware.superiorskyblock.api.hooks.LazyWorldsProvider;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandFlag;
 import com.bgsoftware.superiorskyblock.api.island.IslandPrivilege;
@@ -13,12 +14,16 @@ import com.bgsoftware.superiorskyblock.api.missions.Mission;
 import com.bgsoftware.superiorskyblock.api.upgrades.Upgrade;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.core.EnumHelper;
+import com.bgsoftware.superiorskyblock.core.LazyReference;
+import com.bgsoftware.superiorskyblock.core.LazyWorldLocation;
 import com.bgsoftware.superiorskyblock.core.Text;
 import com.bgsoftware.superiorskyblock.core.database.cache.DatabaseCache;
+import com.bgsoftware.superiorskyblock.core.database.serialization.IslandsDeserializer;
 import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
 import com.bgsoftware.superiorskyblock.core.key.Keys;
 import com.bgsoftware.superiorskyblock.core.logging.Log;
 import com.bgsoftware.superiorskyblock.core.serialization.Serializers;
+import com.bgsoftware.superiorskyblock.core.stackedblocks.StackedBlock;
 import com.bgsoftware.superiorskyblock.island.IslandUtils;
 import com.bgsoftware.superiorskyblock.island.bank.SBankTransaction;
 import com.bgsoftware.superiorskyblock.island.builder.IslandBuilderImpl;
@@ -27,10 +32,8 @@ import com.bgsoftware.superiorskyblock.module.BuiltinModules;
 import com.bgsoftware.superiorskyblock.module.mongodb.bridge.MongoDatabaseBridge;
 import com.bgsoftware.superiorskyblock.module.mongodb.container.MongoIslandContainer;
 import com.bgsoftware.superiorskyblock.module.mongodb.tools.DatabaseResult;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.inventory.ItemStack;
@@ -38,6 +41,7 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,17 +53,15 @@ public class MongoIslandDataLoader {
     private static final Gson GSON = new GsonBuilder().create();
     private static final BigDecimal SYNCED_BANK_LIMIT_VALUE = BigDecimal.valueOf(-2);
 
-    public static void loadIsland(MongoIslandContainer mongoIslandContainer, UUID islandUUID, MongoDatabaseBridge mongoDatabaseBridge) {
-
+    public static void loadIsland(UUID islandUUID, DatabaseBridge mongoDatabaseBridge) {
         mongoDatabaseBridge.loadObject("islands_info",
-                DatabaseFilter.fromFilter("uuid", islandUUID.toString()),
+                DatabaseFilter.fromFilter("_id", islandUUID.toString()),
                 resultSetRaw -> {
                     if (resultSetRaw == null) {
                         return;
                     }
                     DatabaseResult databaseResult = new DatabaseResult(resultSetRaw);
                     IslandBuilderImpl builder = new IslandBuilderImpl();
-
 
                     Optional<UUID> ownerUUID = databaseResult.getUUID("owner");
                     if (ownerUUID.isEmpty()) {
@@ -77,6 +79,29 @@ public class MongoIslandDataLoader {
                         Log.warn("Cannot load island with invalid center, skipping...");
                         return;
                     }
+                    deserializeIslandHomes(databaseResult, builder);
+                    deserializeMembers(databaseResult, builder);
+                    deserializeBanned(databaseResult, builder);
+                    deserializePlayerPermissions(databaseResult, builder);
+                    deserializeRolePermissions(databaseResult, builder);
+                    deserializeUpgrades(databaseResult, builder);
+                    deserializeWarps(databaseResult, builder);
+                    deserializeBlockLimits(databaseResult, builder);
+                    deserializeRatings(databaseResult, builder);
+                    deserializeMissions(databaseResult, builder);
+                    deserializeIslandFlags(databaseResult, builder);
+                    deserializeGenerators(databaseResult, builder);
+                    deserializeVisitors(databaseResult, builder);
+                    deserializeEntityLimits(databaseResult, builder);
+                    deserializeEffects(databaseResult, builder);
+                    deserializeIslandChest(databaseResult, builder);
+                    deserializeRoleLimits(databaseResult, builder);
+                    deserializeWarpCategories(databaseResult, builder);
+                    deserializeIslandBank(databaseResult, builder);
+                    deserializeVisitorHomes(databaseResult, builder);
+                    deserializeIslandSettings(databaseResult, builder);
+                    deserializeBankTransactions(databaseResult, builder);
+                    deserializePersistentDataContainer(databaseResult, builder);
 
                     builder.setOwner(owner)
                             .setUniqueId(islandUUID)
@@ -94,7 +119,42 @@ public class MongoIslandDataLoader {
                             .setGeneratedSchematics(databaseResult.getInt("generated_schematics").orElse(0))
                             .setUnlockedWorlds(databaseResult.getInt("unlocked_worlds").orElse(0))
                             .setLastTimeUpdated(databaseResult.getLong("last_time_updated").orElse(System.currentTimeMillis() / 1000L));
+
+                    databaseResult.getMap("dirty_chunks").ifPresent(dirtyChunks -> {
+                        deserializeDirtyChunks(builder, dirtyChunks);
+                    });
+
+                    databaseResult.getMap("block_counts").ifPresent(blockCounts -> {
+                        deserializeBlockCounts(builder, blockCounts);
+                    });
+
+                    databaseResult.getString("entity_counts").ifPresent(entityCounts -> {
+                        deserializeEntityCounts(builder, entityCounts);
+                    });
+
+                    plugin.getGrid().getIslandsContainer().addIsland(builder.build());
                 });
+    }
+
+    public static void loadStackedBlock(DatabaseResult islandDatabaseResult) {
+        Optional<Map<String, Object>> stackBlocks = islandDatabaseResult.getMap("stack_blocks");
+        if (!stackBlocks.isPresent()) {
+            return;
+        }
+        String islandKey = islandDatabaseResult.getString("_id").get();
+        for (Map.Entry<String, Object> blocks : stackBlocks.get().entrySet()) {
+            String loc = blocks.getKey();
+            String info = (String) blocks.getValue();
+
+            String[] split = loc.split(",");
+            int amount = Integer.parseInt(info.split(",")[1]);
+            World world = Bukkit.getWorld("island_" + islandKey + "_" + split[0]);
+            if (world == null) {
+                continue;
+            }
+            Location location = new Location(world, Integer.parseInt(split[1]), Integer.parseInt(split[2]), Integer.parseInt(split[3]));
+            plugin.getStackedBlocks().setStackedBlock(location.getBlock(), amount);
+        }
     }
 
 
@@ -123,7 +183,8 @@ public class MongoIslandDataLoader {
 
             SuperiorPlayer superiorPlayer = plugin.getPlayers().getSuperiorPlayer(playerUUID, false);
             if (superiorPlayer == null) {
-                Log.warn("Cannot load island member with unrecognized uuid: " + playerUUID + ", skipping #2...");
+                //TODO 加载离线玩家
+                Log.warn("Load members if they r not in cache.");
                 continue;
             }
             DatabaseResult result = new DatabaseResult(map.get());
@@ -264,33 +325,29 @@ public class MongoIslandDataLoader {
         }
     }
 
-    public static void deserializeDirtyChunks(Island.Builder builder, String dirtyChunks) {
-        if (Text.isBlank(dirtyChunks))
+    public static void deserializeDirtyChunks(Island.Builder builder, Map<String, Object> dirtyChunks) {
+        if (dirtyChunks.isEmpty())
             return;
 
-        JsonObject dirtyChunksObject = GSON.fromJson(dirtyChunks, JsonObject.class);
-        dirtyChunksObject.entrySet().forEach(dirtyChunkEntry -> {
-            String worldName = dirtyChunkEntry.getKey();
-            JsonArray dirtyChunksArray = dirtyChunkEntry.getValue().getAsJsonArray();
-
-            dirtyChunksArray.forEach(dirtyChunkElement -> {
-                String[] chunkPositionSections = dirtyChunkElement.getAsString().split(",");
-                builder.setDirtyChunk(worldName, Integer.parseInt(chunkPositionSections[0]),
-                        Integer.parseInt(chunkPositionSections[1]));
-            });
+        dirtyChunks.forEach((wName, value) -> {
+            String worldName = ("island_" + builder.getUniqueId().toString() + "_" + wName).toLowerCase();
+            if (value instanceof List<?> list) {
+                for (Object o : list) {
+                    String[] chunkPositionSections = ((String) o).split(",");
+                    builder.setDirtyChunk(worldName, Integer.parseInt(chunkPositionSections[0]),
+                            Integer.parseInt(chunkPositionSections[1]));
+                }
+            }
         });
     }
 
-    public static void deserializeBlockCounts(Island.Builder builder, String blocks) {
-        if (Text.isBlank(blocks))
+    public static void deserializeBlockCounts(Island.Builder builder, Map<String, Object> blockCounts) {
+        if (blockCounts.isEmpty())
             return;
 
-        JsonArray blockCounts = GSON.fromJson(blocks, JsonArray.class);
-
-        blockCounts.forEach(blockCountElement -> {
-            JsonObject blockCountObject = blockCountElement.getAsJsonObject();
-            Key blockKey = Keys.ofMaterialAndData(blockCountObject.get("id").getAsString());
-            BigInteger amount = new BigInteger(blockCountObject.get("amount").getAsString());
+        blockCounts.forEach((block, count) -> {
+            Key blockKey = Keys.ofMaterialAndData(block);
+            BigInteger amount = BigInteger.valueOf((long) count);
             builder.setBlockCount(blockKey, amount);
         });
     }
@@ -381,7 +438,7 @@ public class MongoIslandDataLoader {
     }
 
     public static void deserializeIslandFlags(DatabaseResult islandDatabaseResult, Island.Builder builder) {
-        Optional<Map<String, Object>> islandFlags = islandDatabaseResult.getMap("island_flags");
+        Optional<Map<String, Object>> islandFlags = islandDatabaseResult.getMap("flags");
         if (islandFlags.isEmpty()) {
             return;
         }
@@ -422,7 +479,7 @@ public class MongoIslandDataLoader {
     }
 
     public static void deserializeIslandHomes(DatabaseResult islandDatabaseResult, Island.Builder builder) {
-        Optional<Map<String, Object>> islandHomes = islandDatabaseResult.getMap("island_homes");
+        Optional<Map<String, Object>> islandHomes = islandDatabaseResult.getMap("homes");
         if (islandHomes.isEmpty()) {
             return;
         }
@@ -480,7 +537,7 @@ public class MongoIslandDataLoader {
     }
 
     public static void deserializeIslandChest(DatabaseResult islandDatabaseResult, Island.Builder builder) {
-        Optional<Map<String, Object>> islandChest = islandDatabaseResult.getMap("island_chest");
+        Optional<Map<String, Object>> islandChest = islandDatabaseResult.getMap("chest");
         if (islandChest.isEmpty()) {
             return;
         }
@@ -540,7 +597,7 @@ public class MongoIslandDataLoader {
     }
 
     public static void deserializeIslandBank(DatabaseResult islandDatabaseResult, Island.Builder builder) {
-        Optional<Map<String, Object>> bank = islandDatabaseResult.getMap("island_bank");
+        Optional<Map<String, Object>> bank = islandDatabaseResult.getMap("bank");
         if (bank.isEmpty()) {
             return;
         }
@@ -557,7 +614,7 @@ public class MongoIslandDataLoader {
     }
 
     public static void deserializeIslandSettings(DatabaseResult islandDatabaseResult, Island.Builder builder) {
-        Optional<Map<String, Object>> settings = islandDatabaseResult.getMap("island_settings");
+        Optional<Map<String, Object>> settings = islandDatabaseResult.getMap("settings");
         if (settings.isEmpty()) {
             return;
         }

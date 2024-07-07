@@ -8,8 +8,10 @@ import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.module.mongodb.MongoDBClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.UpdateOptions;
 import org.bson.Document;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Locale;
 
@@ -33,44 +35,44 @@ public class MongoDatabasePlayerSaver {
         }
         collection.updateOne(query, new Document("$set", update));
     }
-
-    public static void saveTextureValue(DatabaseFilter filter, Pair<String, Object>... columns) {
-        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
-        Document query = new Document();
-        Document update = new Document();
-        for (Pair<String, Object> column : filter.getFilters()) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            if ("uuid".equals(key)) {
-                query.append("_id", value);
-            }
-        }
-        for (Pair<String, Object> column : columns) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            update.append(key, value);
-        }
-        collection.updateOne(query, new Document("$set", update));
-    }
-
-    public static void savePlayerName(DatabaseFilter filter, Pair<String, Object>... columns) {
-        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
-        Document query = new Document();
-        Document update = new Document();
-        for (Pair<String, Object> column : filter.getFilters()) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            if ("uuid".equals(key)) {
-                query.append("_id", value);
-            }
-        }
-        for (Pair<String, Object> column : columns) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            update.append(key, value);
-        }
-        collection.updateOne(query, new Document("$set", update));
-    }
+//
+//    public static void saveTextureValue(DatabaseFilter filter, Pair<String, Object>... columns) {
+//        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
+//        Document query = new Document();
+//        Document update = new Document();
+//        for (Pair<String, Object> column : filter.getFilters()) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            if ("uuid".equals(key)) {
+//                query.append("_id", value);
+//            }
+//        }
+//        for (Pair<String, Object> column : columns) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            update.append(key, value);
+//        }
+//        collection.updateOne(query, new Document("$set", update));
+//    }
+//
+//    public static void savePlayerName(DatabaseFilter filter, Pair<String, Object>... columns) {
+//        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
+//        Document query = new Document();
+//        Document update = new Document();
+//        for (Pair<String, Object> column : filter.getFilters()) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            if ("uuid".equals(key)) {
+//                query.append("_id", value);
+//            }
+//        }
+//        for (Pair<String, Object> column : columns) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            update.append(key, value);
+//        }
+//        collection.updateOne(query, new Document("$set", update));
+//    }
 
     public static void updatePlayerSetting(DatabaseFilter filter, Pair<String, Object>... columns) {
         MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
@@ -90,139 +92,139 @@ public class MongoDatabasePlayerSaver {
         }
         collection.updateOne(query, new Document("$set", update));
     }
-
-    public static void saveUserLocale(DatabaseFilter filter, Pair<String, Object>... columns) {
-        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
-        Document query = new Document();
-        Document update = new Document();
-        for (Pair<String, Object> column : filter.getFilters()) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            if ("player".equals(key)) {
-                query.append("_id", value);
-            }
-        }
-        for (Pair<String, Object> column : columns) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            update.append("settings." + key, value);
-        }
-        collection.updateOne(query, new Document("$set", update));
-    }
-
-    public static void saveToggledBorder(DatabaseFilter filter, Pair<String, Object>... columns) {
-        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
-        Document query = new Document();
-        Document update = new Document();
-        for (Pair<String, Object> column : filter.getFilters()) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            if ("player".equals(key)) {
-                query.append("_id", value);
-            }
-        }
-        for (Pair<String, Object> column : columns) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            update.append("settings." + key, value);
-        }
-        collection.updateOne(query, new Document("$set", update));
-    }
-
-    public static void saveDisbands(DatabaseFilter filter, Pair<String, Object>... columns) {
-        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
-        Document query = new Document();
-        Document update = new Document();
-        for (Pair<String, Object> column : filter.getFilters()) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            if ("player".equals(key)) {
-                query.append("_id", value);
-            }
-        }
-        for (Pair<String, Object> column : columns) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            update.append("settings." + key, value);
-        }
-        collection.updateOne(query, new Document("$set", update));
-    }
-
-    public static void saveToggledPanel(DatabaseFilter filter, Pair<String, Object>... columns) {
-        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
-        Document query = new Document();
-        Document update = new Document();
-        for (Pair<String, Object> column : filter.getFilters()) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            if ("player".equals(key)) {
-                query.append("_id", value);
-            }
-        }
-        for (Pair<String, Object> column : columns) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            update.append("settings." + key, value);
-        }
-        collection.updateOne(query, new Document("$set", update));
-    }
-
-    public static void saveIslandFly(DatabaseFilter filter, Pair<String, Object>... columns) {
-        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
-        Document query = new Document();
-        Document update = new Document();
-        for (Pair<String, Object> column : filter.getFilters()) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            if ("player".equals(key)) {
-                query.append("_id", value);
-            }
-        }
-        for (Pair<String, Object> column : columns) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            update.append("settings." + key, value);
-        }
-        collection.updateOne(query, new Document("$set", update));
-    }
-
-    public static void saveBorderColor(DatabaseFilter filter, Pair<String, Object>... columns) {
-        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
-        Document query = new Document();
-        Document update = new Document();
-        for (Pair<String, Object> column : filter.getFilters()) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            if ("player".equals(key)) {
-                query.append("_id", value);
-            }
-        }
-        for (Pair<String, Object> column : columns) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            update.append("settings." + key, value);
-        }
-        collection.updateOne(query, new Document("$set", update));
-    }
-
-    public static void saveLastTimeStatus(DatabaseFilter filter, Pair<String, Object>... columns) {
-        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
-        Document query = new Document();
-        Document update = new Document();
-        for (Pair<String, Object> column : filter.getFilters()) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            if ("player".equals(key)) {
-                query.append("_id", value);
-            }
-        }
-        for (Pair<String, Object> column : columns) {
-            String key = column.getKey();
-            Object value = column.getValue();
-            update.append("settings." + key, value);
-        }
-        collection.updateOne(query, new Document("$set", update));
-    }
+//
+//    public static void saveUserLocale(DatabaseFilter filter, Pair<String, Object>... columns) {
+//        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
+//        Document query = new Document();
+//        Document update = new Document();
+//        for (Pair<String, Object> column : filter.getFilters()) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            if ("player".equals(key)) {
+//                query.append("_id", value);
+//            }
+//        }
+//        for (Pair<String, Object> column : columns) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            update.append("settings." + key, value);
+//        }
+//        collection.updateOne(query, new Document("$set", update));
+//    }
+//
+//    public static void saveToggledBorder(DatabaseFilter filter, Pair<String, Object>... columns) {
+//        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
+//        Document query = new Document();
+//        Document update = new Document();
+//        for (Pair<String, Object> column : filter.getFilters()) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            if ("player".equals(key)) {
+//                query.append("_id", value);
+//            }
+//        }
+//        for (Pair<String, Object> column : columns) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            update.append("settings." + key, value);
+//        }
+//        collection.updateOne(query, new Document("$set", update));
+//    }
+//
+//    public static void saveDisbands(DatabaseFilter filter, Pair<String, Object>... columns) {
+//        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
+//        Document query = new Document();
+//        Document update = new Document();
+//        for (Pair<String, Object> column : filter.getFilters()) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            if ("player".equals(key)) {
+//                query.append("_id", value);
+//            }
+//        }
+//        for (Pair<String, Object> column : columns) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            update.append("settings." + key, value);
+//        }
+//        collection.updateOne(query, new Document("$set", update));
+//    }
+//
+//    public static void saveToggledPanel(DatabaseFilter filter, Pair<String, Object>... columns) {
+//        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
+//        Document query = new Document();
+//        Document update = new Document();
+//        for (Pair<String, Object> column : filter.getFilters()) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            if ("player".equals(key)) {
+//                query.append("_id", value);
+//            }
+//        }
+//        for (Pair<String, Object> column : columns) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            update.append("settings." + key, value);
+//        }
+//        collection.updateOne(query, new Document("$set", update));
+//    }
+//
+//    public static void saveIslandFly(DatabaseFilter filter, Pair<String, Object>... columns) {
+//        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
+//        Document query = new Document();
+//        Document update = new Document();
+//        for (Pair<String, Object> column : filter.getFilters()) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            if ("player".equals(key)) {
+//                query.append("_id", value);
+//            }
+//        }
+//        for (Pair<String, Object> column : columns) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            update.append("settings." + key, value);
+//        }
+//        collection.updateOne(query, new Document("$set", update));
+//    }
+//
+//    public static void saveBorderColor(DatabaseFilter filter, Pair<String, Object>... columns) {
+//        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
+//        Document query = new Document();
+//        Document update = new Document();
+//        for (Pair<String, Object> column : filter.getFilters()) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            if ("player".equals(key)) {
+//                query.append("_id", value);
+//            }
+//        }
+//        for (Pair<String, Object> column : columns) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            update.append("settings." + key, value);
+//        }
+//        collection.updateOne(query, new Document("$set", update));
+//    }
+//
+//    public static void saveLastTimeStatus(DatabaseFilter filter, Pair<String, Object>... columns) {
+//        MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
+//        Document query = new Document();
+//        Document update = new Document();
+//        for (Pair<String, Object> column : filter.getFilters()) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            if ("player".equals(key)) {
+//                query.append("_id", value);
+//            }
+//        }
+//        for (Pair<String, Object> column : columns) {
+//            String key = column.getKey();
+//            Object value = column.getValue();
+//            update.append("settings." + key, value);
+//        }
+//        collection.updateOne(query, new Document("$set", update));
+//    }
 
     public static void saveMission(Pair<String, Object>... columns) {
         MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
@@ -285,18 +287,21 @@ public class MongoDatabasePlayerSaver {
     }
 
     public static void insertPlayer(Pair<String, Object>... columns) {
+        System.out.println("insertPlayer -> " + Arrays.toString(columns));
         MongoCollection<Document> collection = MongoDBClient.getCollection("players_info");
         Document update = new Document();
+        Document query = new Document();
         for (Pair<String, Object> column : columns) {
             String key = column.getKey();
             Object value = column.getValue();
             if ("uuid".equals(key)) {
                 update.append("_id", value);
+                query.append("_id", value);
             } else {
                 update.append(key, value);
             }
         }
-        collection.insertOne(update);
+        collection.updateOne(query, new Document("$set", update), new UpdateOptions().upsert(true));
     }
 
     public static void insertPlayerSetting(Pair<String, Object>... columns) {
@@ -309,7 +314,7 @@ public class MongoDatabasePlayerSaver {
             if ("player".equals(key)) {
                 query.append("_id", value);
             } else {
-                update.append("bank" + key, value);
+                update.append("settings." + key, value);
             }
         }
         collection.updateOne(query, new Document("$set", update));

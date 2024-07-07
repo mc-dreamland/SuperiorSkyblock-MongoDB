@@ -26,6 +26,7 @@ public class MongoPlayerContainer implements PlayersContainer {
     @Nullable
     @Override
     public SuperiorPlayer getSuperiorPlayer(String name) {
+        System.out.println("MongoPlayerContainer getSuperiorPlayer #1");
         SuperiorPlayer superiorPlayer = this.playersByNames.get(name.toLowerCase(Locale.ENGLISH));
 
         if (superiorPlayer == null) {
@@ -43,16 +44,6 @@ public class MongoPlayerContainer implements PlayersContainer {
     @Nullable
     @Override
     public SuperiorPlayer getSuperiorPlayer(UUID playerUUID) {
-        SuperiorPlayer superiorPlayer = this.players.get(playerUUID);
-        if (superiorPlayer != null) {
-            return superiorPlayer;
-        }
-
-        //superiorPlayer is null, means there has no loaded form database or the player is a new player;
-        //so check first
-        MongoDatabaseBridge mongoDatabaseBridge = new MongoDatabaseBridge();
-        MongoPlayerDataLoader.loadPlayer(this, playerUUID, mongoDatabaseBridge);
-
         return this.players.get(playerUUID);
     }
 

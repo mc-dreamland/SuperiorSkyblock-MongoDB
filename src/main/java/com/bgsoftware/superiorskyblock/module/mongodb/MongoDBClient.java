@@ -43,7 +43,17 @@ public final class MongoDBClient {
 
     public static void createIndex(String collectionName, String... fieldNames) {
         MongoCollection<Document> collection = MongoDBClient.getCollection(collectionName);
-        collection.createIndex(Indexes.ascending(fieldNames), new IndexOptions().unique(true));
+        IndexOptions indexOptions = new IndexOptions();
+
+        // Check if _id is in fieldNames array
+        boolean isIdField = Arrays.asList(fieldNames).contains("_id");
+
+        // Only set unique if the index is not on _id field
+        if (!isIdField) {
+            indexOptions.unique(true);
+        }
+
+        collection.createIndex(Indexes.ascending(fieldNames), indexOptions);
         CACHED_INDEXES.put(collectionName, Arrays.asList(fieldNames));
     }
 

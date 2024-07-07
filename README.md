@@ -12,3 +12,7 @@ You can find a download link to the module [here](https://hub.bg-software.com/jo
 
 ## Requirements
 Only works on SuperiorSkyblock dev build 313 or later.
+
+# TODO
+* 加载岛屿时同步加载成员。 需在岛屿加载完成后通过事件或其他方式进行加载。
+* 数据格式进一步优化

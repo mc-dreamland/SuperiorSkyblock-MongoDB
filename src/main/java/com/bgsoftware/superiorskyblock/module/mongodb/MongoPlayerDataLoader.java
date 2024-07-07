@@ -1,10 +1,13 @@
 package com.bgsoftware.superiorskyblock.module.mongodb;
 
+import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.SuperiorSkyblockAPI;
 import com.bgsoftware.superiorskyblock.api.data.DatabaseBridge;
 import com.bgsoftware.superiorskyblock.api.data.DatabaseFilter;
 import com.bgsoftware.superiorskyblock.api.enums.BorderColor;
+import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.missions.Mission;
+import com.bgsoftware.superiorskyblock.api.player.container.PlayersContainer;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.module.mongodb.bridge.MongoDatabaseBridge;
 import com.bgsoftware.superiorskyblock.module.mongodb.container.MongoPlayerContainer;
@@ -60,9 +63,9 @@ public class MongoPlayerDataLoader {
         builder.setPersistentData(persistentData);
     }
 
-    public static void loadPlayer(MongoPlayerContainer mongoPlayerContainer, UUID playerUUID, MongoDatabaseBridge mongoDatabaseBridge) {
+    public static void loadPlayer(PlayersContainer mongoPlayerContainer, UUID playerUUID, DatabaseBridge mongoDatabaseBridge) {
         mongoDatabaseBridge.loadObject("players_info",
-                DatabaseFilter.fromFilter("uuid", playerUUID.toString()),
+                DatabaseFilter.fromFilter("_id", playerUUID.toString()),
                 resultSetRaw -> {
                     if (resultSetRaw == null) {
                         return;
@@ -79,6 +82,16 @@ public class MongoPlayerDataLoader {
                             .setTextureValue(databaseResult.getString("last_used_skin").orElse(""))
                             .setLastTimeUpdated(databaseResult.getLong("last_time_updated").orElse(System.currentTimeMillis() / 1000))
                             .build());
+
+                    Optional<UUID> islandUUID = databaseResult.getUUID("island");
+                    if (islandUUID.isPresent()) {
+                        DatabaseBridge islandLoader = SuperiorSkyblockPlugin.getPlugin().getFactory().createDatabaseBridge((Island) null);
+                        Island island = SuperiorSkyblockPlugin.getPlugin().getGrid().getIslandsContainer().getIslandByUUID(islandUUID.get());
+                        if (island != null) {
+                            return;
+                        }
+                        MongoIslandDataLoader.loadIsland(islandUUID.get(), islandLoader);
+                    }
                 });
     }
 }
