@@ -26,6 +26,8 @@ repositories {
 dependencies {
     implementation 'org.mongodb:mongodb-driver-sync:4.7.2'
     implementation 'com.bgsoftware.common.config:CommentedConfiguration:1.0.3'
+    // https://mvnrepository.com/artifact/redis.clients/jedis
+    implementation group: 'redis.clients', name: 'jedis', version: '4.4.8'
 
     compileOnly 'com.bgsoftware:SuperiorSkyblockAPI:2024.1'
     compileOnly files('libs/SuperiorSkyblock2-2024.1.jar')
@@ -64,6 +66,7 @@ shadowJar {
     relocate 'com.bgsoftware.common', 'com.bgsoftware.superiorskyblock.libs.com.bgsoftware.common'
     relocate 'com.mongodb', 'libs.com.mongodb'
     relocate 'org.bson', 'libs.org.bson'
+    relocate 'redis.clients', 'libs.redis.clients'
 
     archiveFileName = rootProject.name + "-" + rootProject.buildVersion + ".jar"
 

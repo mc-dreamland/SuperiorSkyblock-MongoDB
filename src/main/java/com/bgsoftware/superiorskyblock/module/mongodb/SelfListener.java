@@ -65,7 +65,7 @@ public class SelfListener implements Listener {
         }
 
         DatabaseBridge playersLoader = SuperiorSkyblockPlugin.getPlugin().getFactory().createDatabaseBridge((SuperiorPlayer) null);
-        MongoPlayerDataLoader.loadPlayer(plugin.getPlayers().getPlayersContainer(), uuid, playersLoader);
+        MongoPlayerDataLoader.loadPlayer(plugin.getPlayers().getPlayersContainer(), uuid, playersLoader, true);
     }
 
     @EventHandler(priority = EventPriority.NORMAL  , ignoreCancelled = true)

@@ -63,13 +63,15 @@ public class MongoPlayerDataLoader {
         builder.setPersistentData(persistentData);
     }
 
-    public static void loadPlayer(PlayersContainer mongoPlayerContainer, UUID playerUUID, DatabaseBridge mongoDatabaseBridge) {
+    public static void loadPlayer(PlayersContainer mongoPlayerContainer, UUID playerUUID, DatabaseBridge mongoDatabaseBridge, boolean loadIsland) {
         mongoDatabaseBridge.loadObject("players_info",
                 DatabaseFilter.fromFilter("_id", playerUUID.toString()),
                 resultSetRaw -> {
+                    System.out.println("loadPlayer -> #3");
                     if (resultSetRaw == null) {
                         return;
                     }
+                    System.out.println("loadPlayer -> #4");
                     DatabaseResult databaseResult = new DatabaseResult(resultSetRaw);
                     SuperiorPlayer.Builder builder = SuperiorPlayer.newBuilder();
                     deserializeMissions(databaseResult, builder);
@@ -82,15 +84,20 @@ public class MongoPlayerDataLoader {
                             .setTextureValue(databaseResult.getString("last_used_skin").orElse(""))
                             .setLastTimeUpdated(databaseResult.getLong("last_time_updated").orElse(System.currentTimeMillis() / 1000))
                             .build());
-
-                    Optional<UUID> islandUUID = databaseResult.getUUID("island");
-                    if (islandUUID.isPresent()) {
-                        DatabaseBridge islandLoader = SuperiorSkyblockPlugin.getPlugin().getFactory().createDatabaseBridge((Island) null);
-                        Island island = SuperiorSkyblockPlugin.getPlugin().getGrid().getIslandsContainer().getIslandByUUID(islandUUID.get());
-                        if (island != null) {
-                            return;
+                    RedisClient.cachePlayer(mongoPlayerContainer.getSuperiorPlayer(playerUUID));
+                    System.out.println("loadPlayer -> #5");
+                    if (loadIsland) {
+                        Optional<UUID> islandUUID = databaseResult.getUUID("island");
+                        if (islandUUID.isPresent()) {
+                            System.out.println("loadPlayer -> loadIsland -> " + islandUUID.get());
+                            DatabaseBridge islandLoader = SuperiorSkyblockPlugin.getPlugin().getFactory().createDatabaseBridge((Island) null);
+                            Island island = SuperiorSkyblockPlugin.getPlugin().getGrid().getIslandsContainer().getIslandByUUID(islandUUID.get());
+                            if (island != null) {
+                                return;
+                            }
+                            System.out.println("loadPlayer -> loadIsland -> #1");
+                            MongoIslandDataLoader.loadIsland(islandUUID.get(), islandLoader);
                         }
-                        MongoIslandDataLoader.loadIsland(islandUUID.get(), islandLoader);
                     }
                 });
     }

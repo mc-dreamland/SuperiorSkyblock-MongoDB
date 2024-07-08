@@ -54,6 +54,7 @@ public class MongoIslandDataLoader {
     private static final BigDecimal SYNCED_BANK_LIMIT_VALUE = BigDecimal.valueOf(-2);
 
     public static void loadIsland(UUID islandUUID, DatabaseBridge mongoDatabaseBridge) {
+        System.out.println("loadIsland -> #1");
         mongoDatabaseBridge.loadObject("islands_info",
                 DatabaseFilter.fromFilter("_id", islandUUID.toString()),
                 resultSetRaw -> {
@@ -69,11 +70,19 @@ public class MongoIslandDataLoader {
                         return;
                     }
 
+                    System.out.println("loadIsland -> #2");
                     SuperiorPlayer owner = plugin.getPlayers().getSuperiorPlayer(ownerUUID.get(), false);
                     if (owner == null) {
-                        Log.warn("Cannot load island with unrecognized owner uuid: " + ownerUUID.get() + ", skipping...");
-                        return;
+                        DatabaseBridge playersLoader = SuperiorSkyblockPlugin.getPlugin().getFactory().createDatabaseBridge((SuperiorPlayer) null);
+                        MongoPlayerDataLoader.loadPlayer(plugin.getPlayers().getPlayersContainer(), ownerUUID.get(), playersLoader, false);
+
+                        owner = plugin.getPlayers().getSuperiorPlayer(ownerUUID.get(), false);
+                        if (owner == null) {
+                            Log.warn("Cannot load island with unrecognized owner uuid: " + ownerUUID.get() + ", skipping...");
+//                            return;
+                        }
                     }
+                    System.out.println("loadIsland -> #3");
                     Optional<Location> center = databaseResult.getString("center").map(Serializers.LOCATION_SERIALIZER::deserialize);
                     if (center.isEmpty()) {
                         Log.warn("Cannot load island with invalid center, skipping...");
@@ -132,7 +141,10 @@ public class MongoIslandDataLoader {
                         deserializeEntityCounts(builder, entityCounts);
                     });
 
-                    plugin.getGrid().getIslandsContainer().addIsland(builder.build());
+                    Island build = builder.build();
+                    plugin.getGrid().getIslandsContainer().addIsland(build);
+
+                    RedisClient.cacheIsland(build);
                 });
     }
 
@@ -166,6 +178,7 @@ public class MongoIslandDataLoader {
         //      }
         // }
 
+        System.out.println("deserializeMembers -> #1");
         Optional<Map<String, Object>> members = islandDatabaseResult.getMap("members");
         if (members.isEmpty()) {
             return;
@@ -181,12 +194,20 @@ public class MongoIslandDataLoader {
             }
 
 
+            System.out.println("deserializeMembers -> #2 -> " + playerUUID);
             SuperiorPlayer superiorPlayer = plugin.getPlayers().getSuperiorPlayer(playerUUID, false);
             if (superiorPlayer == null) {
-                //TODO 加载离线玩家
-                Log.warn("Load members if they r not in cache.");
-                continue;
+                System.out.println("deserializeMembers -> #3");
+                DatabaseBridge playersLoader = SuperiorSkyblockPlugin.getPlugin().getFactory().createDatabaseBridge((SuperiorPlayer) null);
+                MongoPlayerDataLoader.loadPlayer(plugin.getPlayers().getPlayersContainer(), playerUUID, playersLoader, false);
+                superiorPlayer = plugin.getPlayers().getSuperiorPlayer(playerUUID, false);
+                if (superiorPlayer == null) {
+                    Log.warn("成员信息加载失败！");
+                    continue;
+                }
+//                continue;
             }
+            System.out.println("deserializeMembers -> #4");
             DatabaseResult result = new DatabaseResult(map.get());
 
             PlayerRole playerRole = result.getInt("role").map(SPlayerRole::fromId)

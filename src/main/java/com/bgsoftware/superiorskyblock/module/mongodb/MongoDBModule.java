@@ -45,6 +45,11 @@ public final class MongoDBModule extends PluginModule {
         MongoDBInitializer.initDatabase(plugin);
 
         plugin.getFactory().registerDatabaseBridgeFactory(new MongoDatabaseBridgeFactory());
+        Utils.initServerInfo(plugin);
+
+        String redisUrl = config.getString("redisUrl");
+        int redisDBIndex = config.getInt("redisDBIndex");
+        RedisClient.connect(redisUrl, redisDBIndex);
 
     }
 

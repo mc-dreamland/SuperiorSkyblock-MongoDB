@@ -29,7 +29,7 @@ public class MongoDatabaseIslandSaver {
             if ("island".equals(key)) {
                 query.append("_id", value);
             } else if ("player".equals(key)){
-                players.append("members." + key, info);
+                players.append("members." + value, info);
             } else {
                 info.append(key, value);
             }
@@ -47,7 +47,7 @@ public class MongoDatabaseIslandSaver {
             if ("island".equals(key)) {
                 query.append("_id", value);
             } else if ("player".equals(key)){
-                del.append("members." + key, "");
+                del.append("members." + value, "");
             }
         }
         collection.updateOne(query, new Document("$unset", del));
@@ -64,7 +64,7 @@ public class MongoDatabaseIslandSaver {
                 query.append("_id", value);
             } else if ("player".equals(key)){
                 for (Pair<String, Object> c : columns) {
-                    update.append("members." + key + "." + c.getKey(), c.getValue());
+                    update.append("members." + value + "." + c.getKey(), c.getValue());
                 }
             }
         }
@@ -101,7 +101,7 @@ public class MongoDatabaseIslandSaver {
             if ("island".equals(key)) {
                 query.append("_id", value);
             } else if ("player".equals(key)){
-                del.append("bans." + key, "");
+                del.append("bans." + value, "");
             }
         }
         collection.updateOne(query, new Document("$unset", del));

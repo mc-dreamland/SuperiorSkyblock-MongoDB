@@ -7,3 +7,5 @@
 
 url: 'mongodb://localhost:27017'
 database: 'SuperiorSkyblock'
+redisDBIndex: 10
+redisUrl: localhost
